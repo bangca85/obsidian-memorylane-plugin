@@ -1,0 +1,41 @@
+/* Custom CSS for Timeline Callouts */
+
+/* Increase specificity for year group callouts */
+.markdown-preview-view .callout[data-callout="info"] {
+    border-left: 3px solid var(--text-muted);
+    background-color: var(--background-modifier-hover); /* Light gray background for year */
+}
+
+/* Style for individual entry callouts */
+.markdown-preview-view .callout[data-callout="note"] {
+    border-left: 3px solid var(--interactive-accent);
+    margin-bottom: 10px;
+}
+
+/* Custom CSS for two-column callouts */
+
+.custom-callout {
+    display: flex;
+}
+
+.callout-column {
+    padding: 0 10px; /* Adjust padding as needed */
+}
+
+.callout-column:first-child {
+    flex: 1 1 20%; /* 20% width for the first column */
+}
+
+.callout-column:last-child {
+    flex: 1 1 80%; /* 80% width for the second column */
+}
+
+/* Hide callout icon for date callouts */
+.markdown-preview-view .callout[data-callout*="-"] .callout-icon {
+    display: none;
+}
+/* Custom CSS for right-aligned text in blockquotes */
+.markdown-preview-view .right-align {
+    float: right;
+}
+
