@@ -1,7 +1,8 @@
 import { App, ItemView, TFile, WorkspaceLeaf } from "obsidian";
 import { MemoryLaneUtils } from "MemoryLaneUtils";
 import MemoryLanePlugin from "main";
-import { NotesByYear, TaggedNoteInfo } from "MemoryLaneObject";
+import { NoteMetaData, NotesByYear, PluginDatabase, TaggedNoteInfo } from "MemoryLaneObject";
+import { DatabaseController } from "DatabaseController";
 export const MEMORIES_VIEW_TYPE = "memories-view";
 export const MEMORIES_TEXT = "Memories";
 
@@ -97,7 +98,7 @@ const CSS_STYLE = `
 
 .timeline-header #search-box {
     padding: 7px 10px;
-    margin-right: 10px;
+    margin: 0px 5px;
     border: 1px solid #ddd;
     border-radius: 5px;
     height: 40px; 
@@ -115,6 +116,7 @@ const CSS_STYLE = `
     border: none;
     height: 40px;  
     width: 100px;
+	margin: 0px 5px;
 } 
 
 @media screen and (max-width: 768px) {
@@ -145,7 +147,7 @@ const CSS_STYLE = `
 
     .timeline-header #search-box {
         width: calc(100% - 20px); 
-        margin: 5px 0;  
+        margin: 5px 5px;  
     }
 
     .timeline-header #search-btn {
@@ -157,8 +159,7 @@ export class MemoriesView extends ItemView {
 	markdownContent: string;
 	utils: MemoryLaneUtils;
 	plugin: MemoryLanePlugin;
-	app: App;
-	allNotes: TaggedNoteInfo[] = [];
+	app: App; 
 
 	constructor(leaf: WorkspaceLeaf, plugin: MemoryLanePlugin, app: App) {
 		super(leaf);
@@ -179,30 +180,8 @@ export class MemoriesView extends ItemView {
 		const { containerEl } = this;
 
 		this.addStyles();
-
-		// const settings = this.plugin.settings;
 		containerEl.empty();
-		// containerEl.addClass("memories-view-container");
-		// // Create a search container with an input field and a search button
-		// const searchContainer = containerEl.createDiv('timeline-header');
-		// const searchInput = searchContainer.createEl('input', {
-		// 	type: 'text',
-		// 	attr: { id: 'search-box' },
-		// 	placeholder: 'Search notes...'
-		// });
-		// const searchButton = searchContainer.createEl('button', {
-		// 	text: 'Search',
-		// 	attr: { id: 'search-btn' }
-		// });
-		// searchButton.addEventListener('click', () => {
-		// 	const searchTerm = searchInput.value;
-		// 	containerEl.empty(); // Clear existing content
-		// 	this.renderSearch(containerEl); // Render notes with the search term
-		// 	this.renderNotes(containerEl,searchTerm); // Render notes with the search term
-		// });
 		this.renderSearch(containerEl);
-		// Retrieve events
-		this.allNotes = await this.utils.getMemoriesFromPast();
 		this.renderNotes(containerEl);
 	}
 
@@ -218,6 +197,7 @@ export class MemoriesView extends ItemView {
 			type: "text",
 			attr: { id: "search-box" },
 			placeholder: searchText,
+			value: searchValue,
 		});
 		const searchButton = searchContainer.createEl("button", {
 			text: "Search",
@@ -226,21 +206,71 @@ export class MemoriesView extends ItemView {
 		searchButton.addEventListener("click", () => {
 			const searchTerm = searchInput.value;
 			containerEl.empty(); // Clear existing content
-			this.renderSearch(containerEl,searchTerm);
+
+			this.renderSearch(containerEl, searchTerm);
 			this.renderNotes(containerEl, searchTerm); // Render notes with the search term
+		});
+		const searchAllButton = searchContainer.createEl("button", {
+			text: "All Data",
+			attr: { id: "search-btn" },
+		});
+		searchAllButton.addEventListener("click", () => {
+			const searchTerm = "";
+			containerEl.empty(); // Clear existing content
+
+			this.renderSearch(containerEl, searchTerm);
+			this.renderNotes(containerEl, searchTerm); // Render notes with the search term
+		});
+		searchInput.addEventListener("keydown", (event) => {
+			// Check if the key pressed is 'Enter'
+			if (event.key === "Enter") {
+				const searchTerm = searchInput.value;
+				containerEl.empty(); // Clear existing content
+				this.renderSearch(containerEl, searchTerm);
+				this.renderNotes(containerEl, searchTerm);
+			}
 		});
 	}
 
-	renderNotes(containerEl: HTMLElement, searchValue = "") {
+	async renderNotes(containerEl: HTMLElement, searchValue = "") {
+		let allNotes = [];
+		console.log("searchValue", searchValue);
+		if (searchValue)
+			allNotes = await this.utils.searchNotes(searchValue);
+		else allNotes = await this.utils.getMemoriesFromPast();
+		// create test database
+		const tmpMeta : NoteMetaData = {
+			fileName: "",
+			lastModified: 0,
+			taggedInfo: allNotes,
+		};
+		
+		const pluginDatabase : PluginDatabase =  {
+			lastUpdateCheck: new Date().getTime(),
+			notesMetaData: [tmpMeta],
+			path: "/",
+		};
+
+		const dbController = new DatabaseController(this.app, "demo");
+		dbController.initializePlugin();
+		dbController.updateDatebase(pluginDatabase);
+		dbController.saveDatabase();
+
 		const contentContainer = containerEl.createDiv(
 			"memories-view-container"
 		);
 		// Create timeline container
 		const timelineContainer = contentContainer.createDiv("timeline");
-
+		if (allNotes.length == 0) {
+			timelineContainer.createEl("div", {
+				cls: "event",
+				text: "No notes found",
+			});
+			return;
+		}
 		// Group notes by year
-		const notesByYear = this.allNotes.reduce<NotesByYear>((acc, note) => {
-			const year = note.rowCreateDate.substring(0, 4); // Extract the year from rowCreateDate
+		const notesByYear = allNotes.reduce<NotesByYear>((acc, note) => {
+			const year = note.yearNote; //note.rowCreateDate.substring(0, 4); // Extract the year from rowCreateDate
 			if (!acc[year]) {
 				acc[year] = [];
 			}
@@ -248,7 +278,12 @@ export class MemoriesView extends ItemView {
 			return acc;
 		}, {});
 
-		Object.entries(notesByYear).forEach(([year, notes]) => {
+		console.log(notesByYear);
+		const sortedYears = Object.entries(notesByYear).sort((a, b) =>
+			b[0].localeCompare(a[0])
+		);
+
+		sortedYears.forEach(([year, notes]) => {
 			// Create year title
 			const yearTitle = timelineContainer.createEl("div", {
 				cls: "year-title",
@@ -264,15 +299,19 @@ export class MemoriesView extends ItemView {
 				const eventDiv = eventsContainer.createDiv("event");
 
 				// Event date
-				const eventDate = eventDiv.createDiv("event-date");
-				eventDate.textContent = note.fileCreateDate; // Use fileCreateDate for event date
 
+				const eventDate = eventDiv.createDiv("event-date");
+				if (note.fileCreateDate === note.rowCreateDate) {
+					eventDate.textContent = note.fileCreateDate; // Use fileCreateDate for event date
+				} else {
+					eventDate.textContent = note.rowCreateDate; // Use rowCreateDate for event date
+				}
 				// Event content
 				const eventContent = eventDiv.createDiv("event-content");
 
 				eventContent.createEl("div", {
 					cls: "event-description",
-					text: note.tagRow,
+					text: note.contentNote,
 				}); // Use tagRow for event description
 				const eventTitle = eventContent.createEl("div", {
 					cls: "event-title",

@@ -1,15 +1,15 @@
-import { App, TFile } from 'obsidian';
-import type MemoryLanePlugin from './main'; // Import your main plugin type
-import { TaggedNoteInfo } from 'MemoryLaneObject';
+import { App, TFile } from "obsidian";
+import type MemoryLanePlugin from "./main"; // Import your main plugin type
+import { TaggedNoteInfo } from "MemoryLaneObject";
 
 export class MemoryLaneUtils {
-    plugin: MemoryLanePlugin;
-    app: App;
+	plugin: MemoryLanePlugin;
+	app: App;
 
-    constructor(plugin: MemoryLanePlugin) {
-        this.plugin = plugin;
-        this.app = plugin.app;
-    }
+	constructor(plugin: MemoryLanePlugin) {
+		this.plugin = plugin;
+		this.app = plugin.app;
+	}
 
 	async getNotesInFolder(folderPath: string, app: App): Promise<TFile[]> {
 		const files = app.vault.getFiles();
@@ -20,9 +20,11 @@ export class MemoryLaneUtils {
 			filteredFiles = files.filter((file) => !file.path.includes("/"));
 		} else {
 			// For non-root folders, filter normally
-			filteredFiles = files.filter((file) => file.path.startsWith(folderPath));
+			filteredFiles = files.filter((file) =>
+				file.path.startsWith(folderPath)
+			);
 		}
-		
+
 		// for(const item of filteredFiles) {
 		// 	const lastModified = item.stat.mtime;
 		// 	const processedInfo = this.processedFolderFiles[item.path];
@@ -39,7 +41,7 @@ export class MemoryLaneUtils {
 		return filteredFiles;
 	}
 
-    async filterNotesByTag(
+	async filterNotesByTag(
 		notes: TFile[],
 		tagName: string,
 		app: App
@@ -64,15 +66,16 @@ export class MemoryLaneUtils {
 					taggedNotes.push({
 						fileName: note.basename,
 						fileCreateDate: fileCreateDate,
-						tagRow: row,
+						contentNote: row,
 						rowCreateDate: rowCreateDate,
+						yearNote: rowCreateDate.substring(0, 4),
 					});
 				}
 			}
 		}
 		// taggedNotes.sort((a, b) => a.fileCreateDate.localeCompare(b.fileCreateDate));
 		taggedNotes.sort((a, b) =>
-			b.rowCreateDate.localeCompare(a.rowCreateDate)
+			a.rowCreateDate.localeCompare(b.rowCreateDate)
 		);
 
 		return taggedNotes;
@@ -87,7 +90,8 @@ export class MemoryLaneUtils {
 		// If file exists, return it
 		if (file) {
 			console.log("File exists:", filePath);
-			return file;		}
+			return file;
+		}
 
 		// If file doesn't exist, create it
 		try {
@@ -100,7 +104,9 @@ export class MemoryLaneUtils {
 		}
 	}
 
-	async createTimelineMarkdown(taggedNotes: TaggedNoteInfo[]): Promise<string> {
+	async createTimelineMarkdown(
+		taggedNotes: TaggedNoteInfo[]
+	): Promise<string> {
 		let markdownContent = "";
 		let currentYear = "";
 		console.log("taggedNotes");
@@ -120,10 +126,9 @@ export class MemoryLaneUtils {
 			markdownContent += `> ${note.tagRow}\n`;
 			markdownContent += `> <span class="right-align">[[${note.fileName}]]</span>\n\n`;
 		});
-		
+
 		return markdownContent;
 	}
-
 
 	async writeToMarkdownFile(filePath: string, content: string, app: App) {
 		try {
@@ -150,7 +155,16 @@ export class MemoryLaneUtils {
 			this.plugin.settings.tagName,
 			this.app
 		);
-		
+
 		return taggedNotes;
+	}
+
+	async searchNotes(searchText: string): Promise<TaggedNoteInfo[]> {
+		const lowerCaseSearchText = searchText.trim().toLowerCase();
+		const notes = await this.getMemoriesFromPast();
+		const filteredNotes = notes.filter((note) =>
+			note.contentNote?.toLowerCase().includes(lowerCaseSearchText)
+		);
+		return filteredNotes;
 	}
 }
