@@ -1,9 +1,9 @@
-import { NoteMetaData, PluginDatabase, TaggedNoteInfo } from "MemoryLaneObject";
+import { NoteMetaData, PluginDatabase, TaggedNoteInfo } from "utils/MemoryLaneObject";
 import { App, TFile } from "obsidian";
 const databasePath =
 	".obsidian/plugins/obsidian-memorylanze-plugin/memorylane-database.json";
 
-export class DatabaseController {
+export class FileDatabaseController {
 	private app: App;
 	private databasePath: string;
 	private database: PluginDatabase;

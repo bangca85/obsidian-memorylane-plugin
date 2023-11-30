@@ -1,8 +1,8 @@
-import { MEMORIES_VIEW_TYPE, MemoriesView } from "MemoriesView";
-import { MemoryLaneSettings, ProcessedFileInFolder, TaggedNoteInfo } from "MemoryLaneObject";
-import { MemoryLaneSettingsTab } from "MemoryLaneSettingsTab";
+import { MEMORIES_VIEW_TYPE, MemoriesView } from "views/MemoriesView";
+import { MemoryLaneSettings, ProcessedFileInFolder, TaggedNoteInfo } from "utils/MemoryLaneObject";
+import { MemoryLaneSettingsTab } from "views/MemoryLaneSettingsTab";
 import { Editor, MarkdownView, Plugin } from "obsidian";
-import { MemoryLaneUtils } from 'MemoryLaneUtils';
+import { MemoryLaneUtils } from 'utils/MemoryLaneUtils';
 
 // Remember to rename these classes and interfaces!
 

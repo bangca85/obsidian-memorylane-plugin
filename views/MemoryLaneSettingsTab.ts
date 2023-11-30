@@ -1,5 +1,5 @@
 import { PluginSettingTab, Setting, App, TFolder } from 'obsidian';
-import MemoryLanePlugin from './main';
+import MemoryLanePlugin from '../main';
 
 export class MemoryLaneSettingsTab extends PluginSettingTab {
     plugin: MemoryLanePlugin;

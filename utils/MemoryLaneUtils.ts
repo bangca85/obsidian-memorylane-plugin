@@ -1,6 +1,6 @@
 import { App, TFile } from "obsidian";
-import type MemoryLanePlugin from "./main"; // Import your main plugin type
-import { TaggedNoteInfo } from "MemoryLaneObject";
+import type MemoryLanePlugin from "../main"; // Import your main plugin type
+import { TaggedNoteInfo } from "utils/MemoryLaneObject";
 
 export class MemoryLaneUtils {
 	plugin: MemoryLanePlugin;
@@ -123,7 +123,7 @@ export class MemoryLaneUtils {
 
 			// Timeline entry
 			markdownContent += `> [!${note.rowCreateDate}]\n`;
-			markdownContent += `> ${note.tagRow}\n`;
+			markdownContent += `> ${note.contentNote}\n`;
 			markdownContent += `> <span class="right-align">[[${note.fileName}]]</span>\n\n`;
 		});
 

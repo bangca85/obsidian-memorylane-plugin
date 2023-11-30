@@ -31,3 +31,27 @@ export type PluginDatabase = {
     notesMetaData: NoteMetaData[];
 	path: string;
 };
+
+
+export type NoteRowData = {
+    id: number;
+    path: string;
+    fileName: string;
+    fileCreatedDate: Date;
+    fileModifyDate: Date;
+    rowId: string;
+    rowContent: string;
+    rowCreatedDate: Date;
+	rowYear: string
+    createdDate: Date;
+    updatedDate: Date;
+};
+
+
+export type FileLineIndex = {
+    id: number;
+	currentIndex: number;
+	filePath: string;
+    content: string;
+    originalIndex: number; 
+}

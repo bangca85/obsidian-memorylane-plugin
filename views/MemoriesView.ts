@@ -1,8 +1,8 @@
 import { App, ItemView, TFile, WorkspaceLeaf } from "obsidian";
-import { MemoryLaneUtils } from "MemoryLaneUtils";
+import { MemoryLaneUtils } from "utils/MemoryLaneUtils";
 import MemoryLanePlugin from "main";
-import { NoteMetaData, NotesByYear, PluginDatabase, TaggedNoteInfo } from "MemoryLaneObject";
-import { DatabaseController } from "DatabaseController";
+import { NoteMetaData, NotesByYear, PluginDatabase, TaggedNoteInfo } from "utils/MemoryLaneObject";
+import { DatabaseController } from "data/FileDatabaseController";
 export const MEMORIES_VIEW_TYPE = "memories-view";
 export const MEMORIES_TEXT = "Memories";
 
