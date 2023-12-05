@@ -10,6 +10,7 @@ import { MemoryLaneUtils } from 'utils/MemoryLaneUtils';
 const DEFAULT_SETTINGS: MemoryLaneSettings = {
 	folderPath: "",
 	tagName: "",
+	dateFormat: ""
 };
 
 export default class MemoryLanePlugin extends Plugin {

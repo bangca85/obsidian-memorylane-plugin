@@ -45,6 +45,8 @@ export type NoteRowData = {
 	rowYear: string
     createdDate: Date;
     updatedDate: Date;
+	filePath: string;	
+	dateNo: string;
 };
 
 
@@ -54,4 +56,10 @@ export type FileLineIndex = {
 	filePath: string;
     content: string;
     originalIndex: number; 
+}
+
+export type FolderTimeIndex = {
+	id: number;
+	folderPath: string;
+	lastModified: Date;
 }

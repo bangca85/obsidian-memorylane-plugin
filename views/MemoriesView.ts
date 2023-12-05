@@ -1,8 +1,9 @@
 import { App, ItemView, TFile, WorkspaceLeaf } from "obsidian";
 import { MemoryLaneUtils } from "utils/MemoryLaneUtils";
 import MemoryLanePlugin from "main";
-import { NoteMetaData, NotesByYear, PluginDatabase, TaggedNoteInfo } from "utils/MemoryLaneObject";
-import { DatabaseController } from "data/FileDatabaseController";
+import { FolderTimeIndex, NotesByYear } from "utils/MemoryLaneObject";
+import { IndexedDBManager } from "data/IndexedDBManager";
+
 export const MEMORIES_VIEW_TYPE = "memories-view";
 export const MEMORIES_TEXT = "Memories";
 
@@ -156,16 +157,23 @@ const CSS_STYLE = `
     }
 `;
 export class MemoriesView extends ItemView {
+	private dbManager: IndexedDBManager;
 	markdownContent: string;
 	utils: MemoryLaneUtils;
 	plugin: MemoryLanePlugin;
-	app: App; 
+	app: App;
 
 	constructor(leaf: WorkspaceLeaf, plugin: MemoryLanePlugin, app: App) {
 		super(leaf);
 		this.plugin = plugin;
 		this.utils = new MemoryLaneUtils(plugin);
 		this.app = app;
+		this.dbManager = new IndexedDBManager();
+		this.initialize();
+	}
+
+	async initialize() {
+		await this.dbManager.openDatabase();
 	}
 
 	getViewType() {
@@ -235,26 +243,69 @@ export class MemoriesView extends ItemView {
 	async renderNotes(containerEl: HTMLElement, searchValue = "") {
 		let allNotes = [];
 		console.log("searchValue", searchValue);
-		if (searchValue)
-			allNotes = await this.utils.searchNotes(searchValue);
+		if (searchValue) allNotes = await this.utils.searchNotes(searchValue);
 		else allNotes = await this.utils.getMemoriesFromPast();
 		// create test database
-		const tmpMeta : NoteMetaData = {
-			fileName: "",
-			lastModified: 0,
-			taggedInfo: allNotes,
-		};
-		
-		const pluginDatabase : PluginDatabase =  {
-			lastUpdateCheck: new Date().getTime(),
-			notesMetaData: [tmpMeta],
-			path: "/",
-		};
+		// const tmpMeta : NoteMetaData = {
+		// 	fileName: "",
+		// 	lastModified: 0,
+		// 	taggedInfo: allNotes,
+		// };
 
-		const dbController = new DatabaseController(this.app, "demo");
-		dbController.initializePlugin();
-		dbController.updateDatebase(pluginDatabase);
-		dbController.saveDatabase();
+		// const pluginDatabase : PluginDatabase =  {
+		// 	lastUpdateCheck: new Date().getTime(),
+		// 	notesMetaData: [tmpMeta],
+		// 	path: "/",
+		// };
+
+		// const dbController = new DatabaseController(this.app, "demo");
+		// dbController.initializePlugin();
+		// dbController.updateDatebase(pluginDatabase);
+		// dbController.saveDatabase();
+
+		//step 1 get last modified date of folder
+		const folderTimeObj: FolderTimeIndex | null = await this.dbManager.getFolderLastModify(this.plugin.settings.folderPath);
+		console.log("folderTimeObj",folderTimeObj);
+		let notesInFolder = null;
+		if(folderTimeObj == null || !folderTimeObj) {
+			// the first time get data
+			notesInFolder= await this.utils.getNotesInFolder(
+				this.plugin.settings.folderPath,
+				this.app
+			);
+			//save lastmodify date to database
+			const folderTimeIndex: FolderTimeIndex = {
+				id: 0,
+				folderPath: this.plugin.settings.folderPath,
+				lastModified: new Date(),
+			};
+			console.log("folderTimeIndex",folderTimeIndex);
+			this.dbManager.addRowFolder(folderTimeIndex);
+
+		}
+		else {
+			//get data from last modify date
+			const lastModify = new Date(folderTimeObj?.lastModified);
+			console.log("lastModify",lastModify);
+			notesInFolder = await this.utils.getNotesInFolderWithLastModify(
+				this.plugin.settings.folderPath,
+				lastModify,this.app);
+		}
+		console.log("notesInFolder",notesInFolder);
+
+		for (const note of notesInFolder) {
+			const fileContent = await this.app.vault.read(note);
+			const filePath = this.plugin.settings.folderPath + "/" + note.basename;
+			try {
+				await this.dbManager.processFileContent(
+					fileContent,
+					this.plugin.settings.tagName,
+					filePath
+				);
+			} catch (error) {
+				console.error("Error processing file content:", error);
+			}
+		}
 
 		const contentContainer = containerEl.createDiv(
 			"memories-view-container"

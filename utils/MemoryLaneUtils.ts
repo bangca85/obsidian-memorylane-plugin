@@ -25,19 +25,28 @@ export class MemoryLaneUtils {
 			);
 		}
 
-		// for(const item of filteredFiles) {
-		// 	const lastModified = item.stat.mtime;
-		// 	const processedInfo = this.processedFolderFiles[item.path];
-		// 	// process if processedInfo is undefined or lastModified is different
-		// 	if(!processedInfo || processedInfo.lastModified !== lastModified) {
-		// 		this.processedFolderFiles[item.path] = {
-		// 			path: item.path,
-		// 			fileName: item.basename,
-		// 			lastModified: lastModified
-		// 		}
-		// 		await this.saveProcessedFolderFiles();
-		// 	}
-		// }
+		return filteredFiles;
+	}
+
+	async getNotesInFolderWithLastModify(folderPath: string, lastModify: Date, app: App): Promise<TFile[]> {
+		const files = app.vault.getFiles();
+		let filteredFiles: TFile[] = [];
+		
+		// Convert lastModify to milliseconds for comparison
+		const lastModifyTime = lastModify.getTime();
+	
+		if (folderPath === "/") {
+			filteredFiles = files.filter((file) => {
+				// Check if the file is in the root and modified after lastModify
+				return !file.path.includes("/") && file.stat.mtime >= lastModifyTime;
+			});
+		} else {
+			filteredFiles = files.filter((file) => {
+				// Check if the file starts with folderPath and is modified after lastModify
+				return file.path.startsWith(folderPath) && file.stat.mtime >= lastModifyTime;
+			});
+		}
+	
 		return filteredFiles;
 	}
 

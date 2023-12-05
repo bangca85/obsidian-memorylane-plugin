@@ -1,4 +1,4 @@
-import { IndexedDBManager } from '@/database/IndexedDBManager';
+import { IndexedDBManager } from 'data/IndexedDBManager';
 import { NoteRowData } from 'utils/MemoryLaneObject';
 
 
@@ -13,12 +13,17 @@ describe('DatabaseManager', () => {
     test('addRow should add a row to the database', async () => {
         const noteRow: NoteRowData = {
 			id: 1,
-			title: 'Test note',
-			content: 'Test note content',
+			path: 'path',
+			fileName: 'fileName',
+			fileCreatedDate: new Date(),
+			fileModifyDate: new Date(),
+			rowId: 'rowId',
+			rowContent: 'rowContent',
+			rowCreatedDate: new Date(),
+			rowYear: 'rowYear',
 			createdDate: new Date(),
-			modifiedDate: new Date(),
-			tags: ['tag1', 'tag2'],
-		 };
+			updatedDate: new Date(),
+		};
         await dbManager.addRow(noteRow);
         // Thêm assertions để kiểm tra dữ liệu được thêm vào
     });
