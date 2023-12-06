@@ -9,7 +9,7 @@ export type ProcessedFileInFolder = {
 	lastModified: number;
 };
 
-export type NotesByYear = { [year: string]: TaggedNoteInfo[] };
+export type NotesByYear = { [year: string]: NoteRowData[] };
 
 
 export type TaggedNoteInfo = {
@@ -61,5 +61,6 @@ export type FileLineIndex = {
 export type FolderTimeIndex = {
 	id: number;
 	folderPath: string;
+	hashtag: string;
 	lastModified: Date;
 }

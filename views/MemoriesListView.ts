@@ -1,11 +1,11 @@
 import { App, ItemView, TFile, WorkspaceLeaf } from "obsidian";
 import { MemoryLaneUtils } from "utils/MemoryLaneUtils";
 import MemoryLanePlugin from "main";
-import { FolderTimeIndex, NotesByYear } from "utils/MemoryLaneObject";
+import { FolderTimeIndex, NoteRowData } from "utils/MemoryLaneObject";
 import { IndexedDBManager } from "data/IndexedDBManager";
 
-export const MEMORIES_VIEW_TYPE = "memories-view";
-export const MEMORIES_TEXT = "Memories";
+export const MEMORIES_VIEW_TYPE = "memories-list-view";
+export const MEMORIES_TEXT = "List Memories";
 
 const CSS_STYLE = `
 
@@ -241,77 +241,71 @@ export class MemoriesView extends ItemView {
 	}
 
 	async renderNotes(containerEl: HTMLElement, searchValue = "") {
-		let allNotes = [];
+		let allNotes : NoteRowData[] =  [];
 		console.log("searchValue", searchValue);
-		if (searchValue) allNotes = await this.utils.searchNotes(searchValue);
-		else allNotes = await this.utils.getMemoriesFromPast();
-		// create test database
-		// const tmpMeta : NoteMetaData = {
-		// 	fileName: "",
-		// 	lastModified: 0,
-		// 	taggedInfo: allNotes,
-		// };
-
-		// const pluginDatabase : PluginDatabase =  {
-		// 	lastUpdateCheck: new Date().getTime(),
-		// 	notesMetaData: [tmpMeta],
-		// 	path: "/",
-		// };
-
-		// const dbController = new DatabaseController(this.app, "demo");
-		// dbController.initializePlugin();
-		// dbController.updateDatebase(pluginDatabase);
-		// dbController.saveDatabase();
-
-		//step 1 get last modified date of folder
-		const folderTimeObj: FolderTimeIndex | null = await this.dbManager.getFolderLastModify(this.plugin.settings.folderPath);
-		console.log("folderTimeObj",folderTimeObj);
-		let notesInFolder = null;
-		if(folderTimeObj == null || !folderTimeObj) {
-			// the first time get data
-			notesInFolder= await this.utils.getNotesInFolder(
-				this.plugin.settings.folderPath,
-				this.app
-			);
-			//save lastmodify date to database
-			const folderTimeIndex: FolderTimeIndex = {
-				id: 0,
-				folderPath: this.plugin.settings.folderPath,
-				lastModified: new Date(),
-			};
-			console.log("folderTimeIndex",folderTimeIndex);
-			this.dbManager.addRowFolder(folderTimeIndex);
-
-		}
-		else {
-			//get data from last modify date
-			const lastModify = new Date(folderTimeObj?.lastModified);
-			console.log("lastModify",lastModify);
-			notesInFolder = await this.utils.getNotesInFolderWithLastModify(
-				this.plugin.settings.folderPath,
-				lastModify,this.app);
-		}
-		console.log("notesInFolder",notesInFolder);
-
-		for (const note of notesInFolder) {
-			const fileContent = await this.app.vault.read(note);
-			const filePath = this.plugin.settings.folderPath + "/" + note.basename;
-			try {
-				await this.dbManager.processFileContent(
-					fileContent,
-					this.plugin.settings.tagName,
-					filePath
+		if (searchValue) allNotes = await this.dbManager.getAllData(searchValue,'desc');
+		else { 
+			//step 1 get last modified date of folder
+			const folderTimeObj: FolderTimeIndex | null =
+				await this.dbManager.getFolderLastModify(
+					this.plugin.settings.folderPath,
+					this.plugin.settings.tagName
 				);
-			} catch (error) {
-				console.error("Error processing file content:", error);
+			console.log("folderTimeObj", folderTimeObj);
+			let notesInFolder = null;
+			if (folderTimeObj == null || !folderTimeObj) {
+				// the first time get data
+				notesInFolder = await this.utils.getNotesInFolder(
+					this.plugin.settings.folderPath,
+					this.app
+				);
+				//save lastmodify date to database
+				const folderTimeIndex: FolderTimeIndex = {
+					id: 0,
+					folderPath: this.plugin.settings.folderPath,
+					hashtag: this.plugin.settings.tagName,
+					lastModified: new Date(),
+				};
+				console.log("folderTimeIndex", folderTimeIndex);
+				this.dbManager.addRowFolder(folderTimeIndex);
+			} else {
+				//get data from last modify date
+				const lastModify = new Date(folderTimeObj?.lastModified);
+				console.log("lastModify", lastModify);
+				notesInFolder = await this.utils.getNotesInFolderWithLastModify(
+					this.plugin.settings.folderPath,
+					lastModify,
+					this.app
+				);
 			}
-		}
+			console.log("notesInFolder", notesInFolder);
 
+			for (const fileNote of notesInFolder) {
+				const fileContent = await this.app.vault.read(fileNote);
+				const filePath =
+					this.plugin.settings.folderPath + "/" + fileNote.basename;
+				try {
+					await this.utils.processFileContent(
+						this.dbManager,
+						fileNote,
+						fileContent,
+						this.plugin.settings.tagName,
+						filePath
+					);
+				} catch (error) {
+					console.error("Error processing file content:", error);
+				}
+			}
+		//step 3 get data from database
+			allNotes = await this.dbManager.getAllData(null, 'desc');
+			console.log("allNotes", allNotes);
+		}
 		const contentContainer = containerEl.createDiv(
 			"memories-view-container"
 		);
 		// Create timeline container
 		const timelineContainer = contentContainer.createDiv("timeline");
+		//if allNotes is empty
 		if (allNotes.length == 0) {
 			timelineContainer.createEl("div", {
 				cls: "event",
@@ -320,21 +314,12 @@ export class MemoriesView extends ItemView {
 			return;
 		}
 		// Group notes by year
-		const notesByYear = allNotes.reduce<NotesByYear>((acc, note) => {
-			const year = note.yearNote; //note.rowCreateDate.substring(0, 4); // Extract the year from rowCreateDate
-			if (!acc[year]) {
-				acc[year] = [];
-			}
-			acc[year].push(note);
-			return acc;
-		}, {});
+		const groupedNotes = this.utils.groupNotesByYear(allNotes);
+		console.log(groupedNotes);
+		//sort by year
+		const sortedYears = this.utils.sortGroupedNotes(groupedNotes);
 
-		console.log(notesByYear);
-		const sortedYears = Object.entries(notesByYear).sort((a, b) =>
-			b[0].localeCompare(a[0])
-		);
-
-		sortedYears.forEach(([year, notes]) => {
+		for (const year in sortedYears) {
 			// Create year title
 			const yearTitle = timelineContainer.createEl("div", {
 				cls: "year-title",
@@ -344,25 +329,26 @@ export class MemoriesView extends ItemView {
 			// Create a container for the notes of the year
 			const eventsContainer =
 				timelineContainer.createDiv("events-container");
-
-			notes.forEach((note) => {
+			const notesInYear : NoteRowData[] = sortedYears[year];
+			notesInYear.forEach(currentNote => {
+				const note: NoteRowData = currentNote;
 				// Create event item
 				const eventDiv = eventsContainer.createDiv("event");
 
 				// Event date
 
 				const eventDate = eventDiv.createDiv("event-date");
-				if (note.fileCreateDate === note.rowCreateDate) {
-					eventDate.textContent = note.fileCreateDate; // Use fileCreateDate for event date
+				if (note.fileCreatedDate === note.rowCreatedDate) {
+					eventDate.textContent =  this.utils.formatDate(note.fileCreatedDate, this.plugin.settings.dateFormat);	
 				} else {
-					eventDate.textContent = note.rowCreateDate; // Use rowCreateDate for event date
+					eventDate.textContent = this.utils.formatDate(note.rowCreatedDate, this.plugin.settings.dateFormat);	
 				}
 				// Event content
 				const eventContent = eventDiv.createDiv("event-content");
 
 				eventContent.createEl("div", {
 					cls: "event-description",
-					text: note.contentNote,
+					text: note.rowContent,
 				}); // Use tagRow for event description
 				const eventTitle = eventContent.createEl("div", {
 					cls: "event-title",
@@ -376,18 +362,14 @@ export class MemoriesView extends ItemView {
 						fileNameWithExtension
 					);
 					if (file instanceof TFile) {
-						// const leaf = this.app.workspace.activeLeaf || this.app.workspace.getLeaf(true);
-						// await leaf.openFile(file);
-						// Create a new leaf (pane) in the workspace
 						const newLeaf = this.app.workspace.getLeaf();
-						// Open the file in the new leaf
 						await newLeaf.openFile(file);
 					} else {
 						console.error("File not found:", fileNameWithExtension);
 					}
 				});
 			});
-		});
+		}
 	}
 
 	async onClose() {

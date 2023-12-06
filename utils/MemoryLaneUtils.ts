@@ -1,6 +1,7 @@
 import { App, TFile } from "obsidian";
 import type MemoryLanePlugin from "../main"; // Import your main plugin type
-import { TaggedNoteInfo } from "utils/MemoryLaneObject";
+import { NoteRowData, TaggedNoteInfo } from "utils/MemoryLaneObject";
+import { IndexedDBManager } from "data/IndexedDBManager";
 
 export class MemoryLaneUtils {
 	plugin: MemoryLanePlugin;
@@ -18,6 +19,7 @@ export class MemoryLaneUtils {
 		if (folderPath === "/") {
 			// Return files that don't contain '/' in their path, meaning they're in the root
 			filteredFiles = files.filter((file) => !file.path.includes("/"));
+			console.log(filteredFiles);
 		} else {
 			// For non-root folders, filter normally
 			filteredFiles = files.filter((file) =>
@@ -176,4 +178,98 @@ export class MemoryLaneUtils {
 		);
 		return filteredNotes;
 	}
+
+	async findFirstNoteByRowContent(notes: NoteRowData[], searchContent: string): Promise<NoteRowData | undefined> {
+		return notes.find(note => note.rowContent.includes(searchContent));
+	}
+
+
+	async processFileContent(dbManager: IndexedDBManager, fileNote: TFile, fileContent: string, hashtag: string, filePath: string) {
+		const newLines = fileContent.split('\n');
+		const lsNoteofFile : NoteRowData[]  = await dbManager.getNotesByFilePath(filePath);
+		newLines.forEach((content, index) => {
+			// const existingData : NoteRowData | undefined =  this.findFirstNoteByRowContent(lsNoteofFile, content);
+			const existingData = lsNoteofFile.find(note => note.rowContent === content);
+			const idFileIndex = existingData?.id;
+			console.log('idFileIndex', idFileIndex);
+			console.log('hashtag', hashtag);
+			if (content.includes(hashtag)) {
+				if (!existingData || existingData.rowContent !== content) {
+					// new row or content changed
+					const lineId = idFileIndex|| this.generateUniqueId();
+					const modifiedDate = new Date(fileNote.stat.mtime);
+					const noteRowData: NoteRowData = {
+						id: lineId,
+						path: filePath,
+						fileName: filePath.split('/').pop() || '',
+						fileCreatedDate: new Date(fileNote.stat.ctime),
+						fileModifyDate: modifiedDate,
+						rowId: '',
+						rowContent: content,
+						rowCreatedDate: modifiedDate,
+						rowYear: modifiedDate.getFullYear().toString(),
+						createdDate: new Date(),
+						updatedDate: new Date(),
+						filePath: filePath,
+						dateNo: this.getMMDD(modifiedDate)
+					};
+					dbManager.updateRow(noteRowData);
+				}
+			} else if (existingData) {
+				// delete row 
+				if (idFileIndex) {
+					dbManager.deleteRow(idFileIndex);
+				} 
+			}
+		});
 }
+generateUniqueId() : number { 
+	return Number.parseInt(Date.now() + Math.random().toString(16).slice(2));
+}
+
+getMMDD(date: Date) : string
+{
+	const mm = date.getMonth() + 1; // getMonth() is zero-based
+	const dd = date.getDate();
+	return [mm, dd].join('-'); // padding
+}
+
+groupNotesByYear(notes: NoteRowData[]): Record<string, NoteRowData[]> {
+    return notes.reduce((acc, note) => { 
+        if (!acc[note.rowYear]) {
+            acc[note.rowYear] = [];
+        } 
+        acc[note.rowYear].push(note);
+        return acc;
+    }, {} as Record<string, NoteRowData[]>);
+}
+
+sortGroupedNotes(groupedNotes: Record<string, NoteRowData[]>): Record<string, NoteRowData[]> {
+    const sortedGroupedNotes: Record<string, NoteRowData[]> = {};
+
+    // Sort years in descending order
+    const sortedYears = Object.keys(groupedNotes).sort().reverse();
+
+    sortedYears.forEach(year => {
+        // Sort notes within each year group, for example by createdDate
+        const sortedNotes = groupedNotes[year].sort((a, b) => a.createdDate.getTime() - b.createdDate.getTime());
+        sortedGroupedNotes[year] = sortedNotes;
+    });
+
+    return sortedGroupedNotes;
+}
+
+formatDate(date: Date, format: string): string {
+    const tokens: Record<string, () => string> = {
+        'yyyy': () => date.getFullYear().toString(),
+        'MM': () => (date.getMonth() + 1).toString().padStart(2, '0'),
+        'dd': () => date.getDate().toString().padStart(2, '0'),
+        'HH': () => date.getHours().toString().padStart(2, '0'),
+        'mm': () => date.getMinutes().toString().padStart(2, '0'),
+        'ss': () => date.getSeconds().toString().padStart(2, '0'),
+    };
+
+    return format.replace(/yyyy|MM|dd|HH|mm|ss/g, (match) => tokens[match]());
+}
+}
+

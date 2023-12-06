@@ -31,6 +31,7 @@ export class IndexedDBManager {
 			if (!db.objectStoreNames.contains(TABLE_FOLDER_TIME_INDEX)) {
 				const objectStore = db.createObjectStore(TABLE_FOLDER_TIME_INDEX, { autoIncrement: true });
 				objectStore.createIndex('folderPath', 'folderPath', { unique: false });
+				objectStore.createIndex('hashtag', 'hashtag', { unique: false });
 			}
             };
 			
@@ -67,7 +68,7 @@ export class IndexedDBManager {
         });
     }
 
-	async getAllData(rowValue: string, sortDirection: 'asc' | 'desc'): Promise<NoteRowData[]> {
+	async getAllData(rowValue: string | null, sortDirection: 'asc' | 'desc'): Promise<NoteRowData[]> {
 		return new Promise((resolve, reject) => {
 			const transaction = this.db.transaction(TABLE_NOTES, 'readonly');
 			const store = transaction.objectStore(TABLE_NOTES);
@@ -97,6 +98,30 @@ export class IndexedDBManager {
 		});
 	}
 	
+	async  getNotesByFilePath(filePath: string): Promise<NoteRowData[]> {
+		return new Promise((resolve, reject) => {
+			const request = indexedDB.open(this.dbName, this.dbVersion);
+			request.onsuccess = (event: Event) => {
+				const db = (event.target as IDBOpenDBRequest).result;
+				const transaction = db.transaction(TABLE_NOTES, 'readonly');
+				const store = transaction.objectStore(TABLE_NOTES);
+				const index = store.index('filePath');
+				const query = index.getAll(filePath);
+	
+				query.onsuccess = () => {
+					resolve(query.result as NoteRowData[]);
+				};
+	
+				query.onerror = (event: Event) => {
+					console.error('Query error:', (event.target as IDBRequest).error);
+					reject((event.target as IDBRequest).error);
+				};
+			};
+			request.onerror = () => {
+				reject(request.error);
+			};
+		});
+	}
 
     async updateRow(rowData : NoteRowData) {
         return new Promise((resolve, reject) => {
@@ -120,7 +145,7 @@ export class IndexedDBManager {
         });
     }
 
-	async getFolderLastModify(folderPath: string): Promise<FolderTimeIndex | null> {
+	async getFolderLastModify(folderPath: string, hashtag: string): Promise<FolderTimeIndex | null> {
 		return new Promise((resolve, reject) => {
 			const request = indexedDB.open(this.dbName, this.dbVersion);
 	
@@ -139,8 +164,10 @@ export class IndexedDBManager {
 					const query = index.getAll(folderPath);
 	
 					query.onsuccess = () => {
-						const result = query.result[0] as FolderTimeIndex | undefined;
-						resolve(result || null);
+						// Filter the results by the hashtag
+						const filteredResults = query.result.filter(item => item.hashtag === hashtag);
+						const result = filteredResults.length > 0 ? filteredResults[0] as FolderTimeIndex : null;
+						resolve(result);
 					};
 	
 					query.onerror = (event: Event) => {
@@ -224,41 +251,43 @@ export class IndexedDBManager {
             request.onsuccess = () => resolve(request.result);
             request.onerror = () => reject(request.error);
         });
-    }
+    } 
+
+	async getMemories(dateNo: string): Promise<NoteRowData[] | null> {
+		return new Promise((resolve, reject) => {
+			const request = indexedDB.open(this.dbName, this.dbVersion);
 	
-	async processFileContent(fileContent: string, hashtag: string, filePath: string) {
-		const newLines = fileContent.split('\n');
-		const lineDataMap = await this.getFileLineDataMap(filePath);
-		newLines.forEach((content, index) => {
-			const existingData = lineDataMap.get(content);
-			const idFileIndex = existingData?.id;
-			if (content.includes(hashtag)) {
-				if (!existingData || existingData.content !== content) {
-					// new row or content changed
-					const lineId = idFileIndex|| this.generateUniqueId();
-					const fileLineIndex = {
-						id: lineId,
-						currentIndex: index,
-						filePath,
-						content,
-						originalIndex: index,
+			request.onerror = (event: Event) => {
+				console.error('Database error:', (event.target as IDBRequest).error);
+				reject((event.target as IDBRequest).error);
+			};
+	
+			request.onsuccess = (event: Event) => {
+				const db = (event.target as IDBOpenDBRequest).result;
+				const transaction = db.transaction(TABLE_NOTES, 'readonly');
+				const store = transaction.objectStore(TABLE_NOTES);
+	
+				try {
+					const index = store.index('dateNo');
+					const query = index.getAll(dateNo);
+	
+					query.onsuccess = () => {
+						const notes = query.result as NoteRowData[];
+						// Sort the notes array by createdDate in descending order
+						notes.sort((a, b) => b.createdDate.getTime() - a.createdDate.getTime());
+	
+						resolve(notes);
 					};
-					lineDataMap.set(content, fileLineIndex);
-					console.log('fileLineIndex', fileLineIndex);
-					this.updateRowFileIndex(fileLineIndex);
+	
+					query.onerror = (event: Event) => {
+						console.error('Query error:', (event.target as IDBRequest).error);
+						reject((event.target as IDBRequest).error);
+					};
+				} catch (error) {
+					console.error('Error accessing index:', error);
+					reject(error);
 				}
-			} else if (existingData) {
-				// delete row
-				lineDataMap.delete(content);
-				if (idFileIndex) {
-					this.deleteRowFileIndex(idFileIndex);
-				} 
-			}
+			};
 		});
-}
-
-
-	generateUniqueId() : number { 
-		return Number.parseInt(Date.now() + Math.random().toString(16).slice(2));
 	}
 }
