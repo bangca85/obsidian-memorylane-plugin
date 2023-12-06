@@ -1,11 +1,11 @@
 {
 	"id": "vn-memory-lane",
 	"name": "MemoryLane",
-	"version": "0.0.4",
+	"version": "0.0.5",
 	"minAppVersion": "0.15.0",
 	"description": "Relive and celebrate your life's milestones on a personal, interactive timeline. A nostalgic journey through your history with anniversary reminders and cherished memories.",
 	"author": "BangCa",
 	"authorUrl": "https://ko-fi.com/bangca",
-	"fundingUrl": "https://obsidian.md/pricing",
+	"fundingUrl": "https://ko-fi.com/bangca",
 	"isDesktopOnly": false
 }

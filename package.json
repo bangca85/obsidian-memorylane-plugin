@@ -1,6 +1,6 @@
 {
 	"name": "obsidian-memorylane-plugin",
-	"version": "0.0.5",
+	"version": "1.0.0",
 	"description": "Relive and celebrate your life's milestones on a personal, interactive timeline. A nostalgic journey through your history with anniversary reminders and cherished memories.",
 	"main": "main.js",
 	"scripts": {
