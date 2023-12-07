@@ -4,6 +4,8 @@
 
 ## Screenshots
 
+![image](https://raw.githubusercontent.com/bangca85/obsidian-memorylane-plugin/main/image/README/1701900079669.png)
+
 ### LICENSE
 
  MIT License
