@@ -94,21 +94,24 @@ export class MemoryLaneUtils {
 	async createOrGetFile(
 		filePath: string,
 		content = ""
-	): Promise<TFile | null> {
-		const file = this.app.vault.getAbstractFileByPath(filePath) as TFile;
-
+	): Promise<TFile | undefined> {
+		const file = this.app.vault.getAbstractFileByPath(filePath);
+		
 		// If file exists, return it
-		if (file) { 
+		if (file instanceof TFile) { 
 			return file;
 		}
 
 		// If file doesn't exist, create it
 		try {
 			await this.app.vault.create(filePath, content); 
-			return this.app.vault.getAbstractFileByPath(filePath) as TFile;
+			const file = this.app.vault.getAbstractFileByPath(filePath);
+			if (file instanceof TFile) {
+				return file;
+			}
 		} catch (error) {
 			console.error("Error handling file:", error);
-			return null;
+			return undefined;
 		}
 	}
 
@@ -138,7 +141,7 @@ export class MemoryLaneUtils {
 
 	async writeToMarkdownFile(filePath: string, content: string, app: App) {
 		try {
-			const file = app.vault.getAbstractFileByPath(filePath) as TFile;
+			const file = app.vault.getAbstractFileByPath(filePath);
 			if (file instanceof TFile) {
 				await app.vault.modify(file, content);
 			} else {
