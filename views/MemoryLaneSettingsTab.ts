@@ -58,11 +58,15 @@ export class MemoryLaneSettingsTab extends PluginSettingTab {
 						await this.plugin.saveSettings();
 					})
 			);
- 
-		const linkDesc = document.createElement("span");
-		linkDesc.innerHTML =
-			' See formatting at <a href="https://moment.github.io/luxon/#/formatting?id=table-of-tokens" target="_blank">here</a>.';
- 
+
+        const linkDesc = createSpan({ cls: "setting-item-description" });
+        linkDesc.createEl("span", { text: ' See formatting at ' });
+        linkDesc.createEl("a", {
+            href: "https://moment.github.io/luxon/#/formatting?id=table-of-tokens",
+            text: "here",
+            attr: { target: "_blank" }
+        });
+        linkDesc.createEl("span", { text: '.' });				
 		mySetting.descEl.appendChild(linkDesc);
 	}
 

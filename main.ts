@@ -55,7 +55,7 @@ export default class MemoryLanePlugin extends Plugin {
 		//add command to open memories view
 		this.addCommand({
 			id: "open-memories-list-view",
-			name: "Open Memories List",
+			name: "Open memories list",
 			callback: () => this.openMemoriesListView(),
 		});
 		//register memories day view
@@ -66,7 +66,7 @@ export default class MemoryLanePlugin extends Plugin {
 		//add command to open memories view
 		this.addCommand({
 			id: "open-memories-day-view",
-			name: "Open Memories Day",
+			name: "Open memories day",
 			callback: () => this.openMemoriesDayView(),
 		});
 			
