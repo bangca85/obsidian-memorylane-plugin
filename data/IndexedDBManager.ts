@@ -192,7 +192,6 @@ export class IndexedDBManager {
 	
 			request.onsuccess = (event: Event) => {
 				const db = (event.target as IDBOpenDBRequest).result;
-				console.log('this.dbName', this.dbName);
 				const transaction = db.transaction('file-line-index', 'readonly');
 				const store = transaction.objectStore('file-line-index');
 				try {

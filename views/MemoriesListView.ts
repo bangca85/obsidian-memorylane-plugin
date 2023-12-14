@@ -241,8 +241,7 @@ export class MemoriesView extends ItemView {
 	}
 
 	async renderNotes(containerEl: HTMLElement, searchValue = "") {
-		let allNotes : NoteRowData[] =  [];
-		console.log("searchValue", searchValue);
+		let allNotes : NoteRowData[] =  []; 
 		if (searchValue) allNotes = await this.dbManager.getAllData(searchValue,'desc');
 		else { 
 			//step 1 get last modified date of folder
@@ -250,8 +249,7 @@ export class MemoriesView extends ItemView {
 				await this.dbManager.getFolderLastModify(
 					this.plugin.settings.folderPath,
 					this.plugin.settings.tagName
-				);
-			console.log("folderTimeObj", folderTimeObj);
+				); 
 			let notesInFolder = null;
 			if (folderTimeObj == null || !folderTimeObj) {
 				// the first time get data
@@ -265,20 +263,17 @@ export class MemoriesView extends ItemView {
 					folderPath: this.plugin.settings.folderPath,
 					hashtag: this.plugin.settings.tagName,
 					lastModified: new Date(),
-				};
-				console.log("folderTimeIndex", folderTimeIndex);
+				}; 
 				this.dbManager.addRowFolder(folderTimeIndex);
 			} else {
 				//get data from last modify date
-				const lastModify = new Date(folderTimeObj?.lastModified);
-				console.log("lastModify", lastModify);
+				const lastModify = new Date(folderTimeObj?.lastModified); 
 				notesInFolder = await this.utils.getNotesInFolderWithLastModify(
 					this.plugin.settings.folderPath,
 					lastModify,
 					this.app
 				);
 			}
-			console.log("notesInFolder", notesInFolder);
 
 			for (const fileNote of notesInFolder) {
 				const fileContent = await this.app.vault.read(fileNote);
@@ -298,7 +293,6 @@ export class MemoriesView extends ItemView {
 			}
 		//step 3 get data from database
 			allNotes = await this.dbManager.getAllData(null, 'desc');
-			console.log("allNotes", allNotes);
 		}
 		const contentContainer = containerEl.createDiv(
 			"memories-view-container"
@@ -315,7 +309,6 @@ export class MemoriesView extends ItemView {
 		}
 		// Group notes by year
 		const groupedNotes = this.utils.groupNotesByYear(allNotes);
-		console.log(groupedNotes);
 		//sort by year
 		const sortedYears = this.utils.sortGroupedNotes(groupedNotes);
 
@@ -382,7 +375,6 @@ export class MemoriesView extends ItemView {
 	}
 
 	async onLoadState(state: any) {
-		console.log("onLoadState", state);
 		if (state.markdownContent) {
 			this.markdownContent = state.markdownContent;
 		}

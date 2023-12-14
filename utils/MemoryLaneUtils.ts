@@ -19,7 +19,6 @@ export class MemoryLaneUtils {
 		if (folderPath === "/") {
 			// Return files that don't contain '/' in their path, meaning they're in the root
 			filteredFiles = files.filter((file) => !file.path.includes("/"));
-			console.log(filteredFiles);
 		} else {
 			// For non-root folders, filter normally
 			filteredFiles = files.filter((file) =>
@@ -99,15 +98,13 @@ export class MemoryLaneUtils {
 		const file = this.app.vault.getAbstractFileByPath(filePath) as TFile;
 
 		// If file exists, return it
-		if (file) {
-			console.log("File exists:", filePath);
+		if (file) { 
 			return file;
 		}
 
 		// If file doesn't exist, create it
 		try {
-			await this.app.vault.create(filePath, content);
-			console.log("File created:", filePath);
+			await this.app.vault.create(filePath, content); 
 			return this.app.vault.getAbstractFileByPath(filePath) as TFile;
 		} catch (error) {
 			console.error("Error handling file:", error);
@@ -120,8 +117,6 @@ export class MemoryLaneUtils {
 	): Promise<string> {
 		let markdownContent = "";
 		let currentYear = "";
-		console.log("taggedNotes");
-		console.log(taggedNotes);
 		taggedNotes.forEach((note) => {
 			const noteYear = note.rowCreateDate.substring(0, 4); // Use rowCreateDate for grouping
 			if (noteYear !== currentYear) {
@@ -159,8 +154,7 @@ export class MemoryLaneUtils {
 		const notesInFolder = await this.getNotesInFolder(
 			this.plugin.settings.folderPath,
 			this.app
-		);
-		console.log(notesInFolder);
+		); 
 		const taggedNotes = await this.filterNotesByTag(
 			notesInFolder,
 			this.plugin.settings.tagName,
@@ -191,8 +185,6 @@ export class MemoryLaneUtils {
 			// const existingData : NoteRowData | undefined =  this.findFirstNoteByRowContent(lsNoteofFile, content);
 			const existingData = lsNoteofFile.find(note => note.rowContent === content);
 			const idFileIndex = existingData?.id;
-			console.log('idFileIndex', idFileIndex);
-			console.log('hashtag', hashtag);
 			if (content.includes(hashtag)) {
 				if (!existingData || existingData.rowContent !== content) {
 					// new row or content changed

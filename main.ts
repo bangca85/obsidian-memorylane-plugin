@@ -73,7 +73,7 @@ export default class MemoryLanePlugin extends Plugin {
 	}
 
 	onunload() {
-		console.log("unloading plugin");
+	
 	}
 
 	async loadSettings() {
@@ -118,7 +118,6 @@ export default class MemoryLanePlugin extends Plugin {
 
 	async openMemoriesDayView() {
 		// Look for an existing MemoriesView
-		console.log("openMemoriesDayView");
 		let found = false;
 		this.app.workspace.iterateAllLeaves((leaf) => {
 			if (leaf.view.getViewType() === MEMORIES_DAY_TYPE) {

@@ -191,14 +191,12 @@ export class MemoriesDay extends ItemView
 
 		this.addStyles();
 		containerEl.empty();
-		console.log("start memories day");
 		this.renderNotes(containerEl);
 	}
 
 	async renderNotes(containerEl: HTMLElement) {
 		const dateNo = this.utils.getMMDD(new Date());
 		const allNotes : NoteRowData[] | null = await this.dbManager.getMemories(dateNo);
-			console.log("allNotes", allNotes);
 		
 		const contentContainer = containerEl.createDiv(
 			"memories-view-container"
@@ -215,7 +213,6 @@ export class MemoriesDay extends ItemView
 		}
 		// Group notes by year
 		const groupedNotes = this.utils.groupNotesByYear(allNotes);
-		console.log(groupedNotes);
 		//sort by year
 		const sortedYears = this.utils.sortGroupedNotes(groupedNotes);
 
