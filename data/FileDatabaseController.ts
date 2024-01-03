@@ -3,21 +3,21 @@ import {
 	PluginDatabase,
 	TaggedNoteInfo,
 } from "utils/MemoryLaneObject";
-import { App, TFile } from "obsidian";
-const databasePath =
-	".obsidian/plugins/obsidian-memorylanze-plugin/memorylane-database.json";
+import { App, Plugin, TFile } from "obsidian";
 
 export class FileDatabaseController {
 	private app: App;
+	private plugin: Plugin;
 	private databasePath: string;
 	private database: PluginDatabase;
 	private tagName: string;
 
-	constructor(app: App, tagName: string) {
+	constructor(app: App,plugin: Plugin, tagName: string) {
 		this.app = app;
-		this.databasePath = databasePath;
+		this.databasePath = `${plugin.manifest.dir}/memorylane-database.json`;
 		this.database = { lastUpdateCheck: 0, notesMetaData: [], path: "/" };
 		this.tagName = tagName;
+		this.plugin = plugin;
 	}
 
 	async initializePlugin(): Promise<TaggedNoteInfo[]> {
@@ -29,77 +29,44 @@ export class FileDatabaseController {
 	}
 
 	async loadDatabase(): Promise<void> {
-		try {
-			let databaseFile = this.app.vault.getAbstractFileByPath(
-				this.databasePath
-			);
-			if (databaseFile instanceof TFile) {
-				// Check if the database file exists
-				if (!databaseFile) {
-					// If the file doesn't exist, create a new file with default database content
-					const defaultContent = JSON.stringify({
-						lastUpdateCheck: 0,
-						notesMetaData: [],
-						path: "/",
-					});
-					await this.app.vault.create(
-						this.databasePath,
-						defaultContent
-					);
-					databaseFile = this.app.vault.getAbstractFileByPath(
-						this.databasePath
-					);
-				}
-			}
-
-			// If the file exists (or is newly created), read its content
-			if (databaseFile instanceof TFile) {
-				const databaseContent = await this.app.vault.read(databaseFile);
-				this.database = JSON.parse(databaseContent);
-			} else {
-				throw new Error("Database file not found");
-			}
-		} catch (error) {
-			console.error("Error loading database:", error);
-			// Set default database structure in case of an error
-			this.database = {
-				lastUpdateCheck: 0,
-				notesMetaData: [],
-				path: "/",
-			};
-		}
-	}
+        try {
+            const adapter = this.app.vault.adapter;
+            if (await adapter.exists(this.databasePath)) {
+                const databaseContent = await adapter.read(this.databasePath);
+                this.database = JSON.parse(databaseContent);
+            } else {
+                // If the file doesn't exist, create a new file with default database content
+                const defaultContent = JSON.stringify({
+                    lastUpdateCheck: 0,
+                    notesMetaData: [],
+                    path: "/",
+                });
+                await adapter.write(this.databasePath, defaultContent);
+            }
+        } catch (error) {
+            console.error("Error loading database:", error);
+            // Set default database structure in case of an error
+            this.database = {
+                lastUpdateCheck: 0,
+                notesMetaData: [],
+                path: "/",
+            };
+        }
+    }
 
 	async saveDatabase(): Promise<void> {
-		try {
-			// Get the TFile object from the path, or create it if it doesn't exist
-			const databaseFile = this.app.vault.getAbstractFileByPath(
-				this.databasePath
-			);
-			if (databaseFile instanceof TFile) {
-				if (!databaseFile) {
-					// Create the file if it doesn't exist
-					await this.app.vault.create(
-						this.databasePath,
-						JSON.stringify(this.database)
-					);
-				} else {
-					if (databaseFile instanceof TFile) {
-						// Modify the existing file
-						await this.app.vault.modify(
-							databaseFile,
-							JSON.stringify(this.database)
-						);
-					} else {
-						throw new Error("Database path is not a file");
-					}
-				}
-			}
-		} catch (error) {
-			// Handle errors, such as file creation/modification issues
-			console.error("Error saving database:", error);
-		}
-	}
+        try {
+            const adapter = this.app.vault.adapter;
+            if (await adapter.exists(this.databasePath)) {
+                await adapter.write(this.databasePath, JSON.stringify(this.database));
+            } else {
+                // Create the file if it doesn't exist
+                await adapter.write(this.databasePath, JSON.stringify(this.database));
+            }
+        } catch (error) {
+            console.error("Error saving database:", error);
+        }
+    }
 
 	updateDatebase(database: PluginDatabase): void {
 		this.database = database;

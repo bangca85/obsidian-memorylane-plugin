@@ -1,7 +1,7 @@
 import { MEMORIES_VIEW_TYPE, MemoriesView } from "views/MemoriesListView";
 import { MemoryLaneSettings, ProcessedFileInFolder, TaggedNoteInfo } from "utils/MemoryLaneObject";
 import { MemoryLaneSettingsTab } from "views/MemoryLaneSettingsTab";
-import { Editor, MarkdownView, Plugin } from "obsidian";
+import { Plugin } from "obsidian";
 import { MemoryLaneUtils } from 'utils/MemoryLaneUtils';
 import { MEMORIES_DAY_TYPE, MemoriesDay } from "views/MemoriesDay";
 
@@ -93,20 +93,14 @@ export default class MemoryLanePlugin extends Plugin {
 		await this.saveData(this.settings);
 	} 
 
-	async openMemoriesListView() {
-		// Look for an existing MemoriesView
-		let found = false;
-		this.app.workspace.iterateAllLeaves((leaf) => {
-			if (leaf.view.getViewType() === MEMORIES_VIEW_TYPE) {
-				// If MemoriesView is found, focus on it and set found to true
-				this.app.workspace.revealLeaf(leaf);
-				found = true;
-				return false; // Stop iterating
-			}
-		});
-	
-		// If MemoriesView is not found, create a new one
-		if (!found) {
+	async openMemoriesListView() { 
+
+		const leaves = this.app.workspace.getLeavesOfType(MEMORIES_VIEW_TYPE);
+		if (leaves.length > 0) {
+			// If MemoriesView exists, focus on the first one found
+			this.app.workspace.revealLeaf(leaves[0]);
+		} else {
+			// If no MemoriesView found, create a new one
 			const leaf = this.app.workspace.getLeaf(true);
 			await leaf.setViewState({
 				type: MEMORIES_VIEW_TYPE,
@@ -115,21 +109,15 @@ export default class MemoryLanePlugin extends Plugin {
 			this.app.workspace.revealLeaf(leaf);
 		}
 	}
-
-	async openMemoriesDayView() {
-		// Look for an existing MemoriesView
-		let found = false;
-		this.app.workspace.iterateAllLeaves((leaf) => {
-			if (leaf.view.getViewType() === MEMORIES_DAY_TYPE) {
-				// If MemoriesView is found, focus on it and set found to true
-				this.app.workspace.revealLeaf(leaf);
-				found = true;
-				return false; // Stop iterating
-			}
-		});
 	
-		// If MemoriesView is not found, create a new one
-		if (!found) {
+	async openMemoriesDayView() { 
+		const leaves = this.app.workspace.getLeavesOfType(MEMORIES_DAY_TYPE);
+	
+		if (leaves.length > 0) {
+			// If MemoriesDayView exists, focus on the first one found
+			this.app.workspace.revealLeaf(leaves[0]);
+		} else {
+			// If no MemoriesDayView found, create a new one
 			const leaf = this.app.workspace.getLeaf(true);
 			await leaf.setViewState({
 				type: MEMORIES_DAY_TYPE,

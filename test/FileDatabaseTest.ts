@@ -1,6 +1,6 @@
 // Import the necessary modules and types
 import {FileDatabaseController } from '../data/FileDatabaseController';
-import { App, TFile } from 'obsidian';
+import { App, Plugin, TFile } from 'obsidian';
 
 // Mock implementations (simple examples, tailor as needed)
 jest.mock('obsidian');
@@ -10,6 +10,7 @@ const mockVault = {
     getFiles: jest.fn(),
 };
 const mockApp = { vault: mockVault } as unknown as App;
+const mockPlugin = { vault: mockVault } as unknown as Plugin;
 const databasePath =
 	".obsidian/plugins/obsidian-memorylane-plugin/memorylane-database.json";
 describe('DatabaseController', () => {
@@ -17,7 +18,7 @@ describe('DatabaseController', () => {
 
     beforeEach(() => {
         // Initialize DatabaseController with mock App
-        dbController = new FileDatabaseController(mockApp, '#mockTag');
+        dbController = new FileDatabaseController(mockApp, mockPlugin, '#mockTag');
         // Reset mocks before each test
         jest.clearAllMocks();
     });
