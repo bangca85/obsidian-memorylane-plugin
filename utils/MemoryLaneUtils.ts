@@ -60,12 +60,14 @@ export class MemoryLaneUtils {
 		const dateRegex = /\b\d{4}-\d{2}-\d{2}\b/; // Regex pattern to match dates in yyyy-mm-dd format
 
 		for (const note of notes) {
-			const fileContent = await app.vault.read(note);
+			const fileContent = await app.vault.cachedRead(note);
 			const fileCreateDate = new Date(note.stat.ctime)
 				.toISOString()
 				.split("T")[0]; // File creation date in yyyy-mm-dd format
 
-			const rows = fileContent.split("\n");
+			// const rows = fileContent.split("\n"); 
+			// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+			const rows = fileContent.match(/^.*$/gm)!;
 			for (const row of rows) {
 				if (row.includes(tagName)) {
 					const rowCreateDateMatch = row.match(dateRegex);

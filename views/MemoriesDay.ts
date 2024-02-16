@@ -102,7 +102,7 @@ export class MemoriesDay extends ItemView
 					cls: "event-title",
 				});
 				eventTitle.textContent = note.fileName; // Use textContent or innerText
-				eventTitle.addEventListener("click", async () => {
+				eventTitle.addEventListener("click", async (evt) => {
 					const fileNameWithExtension = note.fileName.endsWith(".md")
 						? note.fileName
 						: `${note.fileName}.md`;
@@ -110,12 +110,12 @@ export class MemoriesDay extends ItemView
 						fileNameWithExtension
 					);
 					if (file instanceof TFile) {
-						// const leaf = this.app.workspace.activeLeaf || this.app.workspace.getLeaf(true);
-						// await leaf.openFile(file);
 						// Create a new leaf (pane) in the workspace
-						const newLeaf = this.app.workspace.getLeaf();
-						// Open the file in the new leaf
-						await newLeaf.openFile(file);
+						const openInNewLeaf = evt.ctrlKey || evt.metaKey;
+						// Find a suitable leaf for opening the file
+						const leaf = this.app.workspace.getLeaf(openInNewLeaf);
+						await leaf.openFile(file);
+						
 					} else {
 						console.error("File not found:", fileNameWithExtension);
 					}
@@ -125,11 +125,5 @@ export class MemoriesDay extends ItemView
 	}
 
 	async onClose() {
-		// const styles = document.head.querySelectorAll("style");
-		// styles.forEach((styleEl) => {
-		// 	if (styleEl.innerHTML.includes(CSS_STYLE)) {
-		// 		document.head.removeChild(styleEl);
-		// 	}
-		// });
 	}
 }

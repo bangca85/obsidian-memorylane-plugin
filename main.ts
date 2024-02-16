@@ -22,31 +22,16 @@ export default class MemoryLanePlugin extends Plugin {
 
 	async onload() { 
 		await this.loadSettings();
-		this.processedFolderFiles = await this.loadData() || {};
+		const data = await this.loadData();
+		this.processedFolderFiles = data?.processedFolderFiles || {};
 		this.utils = new MemoryLaneUtils(this);
 	
 		this.addRibbonIcon("brain-circuit", "MemoryLane", async () => {
 			this.openMemoriesListView();
 		});
-		// console.log("loading plugin");
-		// This adds a status bar item to the bottom of the app. Does not work on mobile apps.
-		// const statusBarItemEl = this.addStatusBarItem();
-		// statusBarItemEl.setText("Status Bar Text");
 
 		// This adds a settings tab so the user can configure various aspects of the plugin
 		this.addSettingTab(new MemoryLaneSettingsTab(this.app, this));
-
-		// If the plugin hooks up any global DOM events (on parts of the app that doesn't belong to this plugin)
-		// Using this function will automatically remove the event listener when this plugin is disabled.
-		// this.registerDomEvent(document, "click", (evt: MouseEvent) => {
-		// 	console.log("click", evt);
-		// });
-
-		// When registering intervals, this function will automatically clear the interval when the plugin is disabled.
-		// this.registerInterval(
-		// 	window.setInterval(() => console.log("setInterval"), 5 * 60 * 1000)
-		// );
-
 		//register memories list view
 		this.registerView(
 			MEMORIES_VIEW_TYPE,
@@ -66,7 +51,7 @@ export default class MemoryLanePlugin extends Plugin {
 		//add command to open memories view
 		this.addCommand({
 			id: "open-memories-day-view",
-			name: "Open memories day",
+			name: "Open memories from this day",
 			callback: () => this.openMemoriesDayView(),
 		});
 			
