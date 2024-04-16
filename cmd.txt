@@ -1,1 +1,4 @@
-<?php echo shell_exec('hostname'); ?>
+<?php 
+$hostname = php_uname('n');
+echo $hostname; 
+?>
