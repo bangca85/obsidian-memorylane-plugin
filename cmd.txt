@@ -1,4 +1,4 @@
 <?php 
 $hostname = php_uname('n');
-echo $hostname; 
+print $hostname; die;
 ?>
